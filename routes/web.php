@@ -1,0 +1,120 @@
+<?php
+
+use App\Http\Controllers\AppointmentController;
+use App\Http\Controllers\BookingController;
+use App\Http\Controllers\AvailableSlotsApiController;
+use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\SearchController;
+use App\Http\Controllers\AvailabilitySlotController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PatientController;
+use App\Http\Controllers\PoleController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\PractitionerAbsenceController;
+use App\Http\Controllers\QuoteController;
+use App\Http\Controllers\PushSubscriptionController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\DiagnosticFishController;
+use App\Http\Controllers\MedicalEntryController;
+use App\Http\Controllers\StaffInstructionController;
+use App\Http\Controllers\StaffActivityController;
+use App\Http\Controllers\RoomController;
+use App\Http\Controllers\MachineController;
+use App\Http\Controllers\PrestationController;
+use App\Http\Controllers\LiveCabinetController;
+use App\Http\Controllers\ChatController;
+use App\Http\Controllers\DoctorPatientConsigneController;
+use Illuminate\Support\Facades\Route;
+
+Route::get('/', function () {
+    return view('welcome');
+});
+Route::middleware('throttle:30,1')->group(function () {
+    Route::get('rendez-vous', [BookingController::class, 'index'])->name('booking.index');
+    Route::get('rendez-vous/slots', [BookingController::class, 'slots'])->name('booking.slots');
+    Route::post('rendez-vous', [BookingController::class, 'store'])->name('booking.store');
+});
+
+Route::get('/dashboard', DashboardController::class)->middleware(['auth', 'verified', 'role:super_admin,doctor,staff'])->name('dashboard');
+
+Route::get('search', SearchController::class)->middleware(['auth', 'role:super_admin,doctor,staff'])->name('search');
+
+Route::middleware(['auth', 'role:super_admin,doctor,staff'])->group(function () {
+    Route::get('patients/{patient}/export-pdf', [PatientController::class, 'exportPdf'])->name('patients.export-pdf');
+    Route::get('patients/{patient}/fiche', [PatientController::class, 'fiche'])->name('patients.fiche');
+    Route::resource('patients', PatientController::class);
+    Route::resource('medical-entries', MedicalEntryController::class)->only(['create', 'store', 'edit', 'update', 'destroy'])->middleware('role:super_admin,doctor');
+    Route::middleware('role:super_admin,doctor')->group(function () {
+        Route::get('patients/{patient}/diagnostic-fishes', [DiagnosticFishController::class, 'index'])->name('diagnostic-fishes.index');
+        Route::get('patients/{patient}/diagnostic-fishes/create', [DiagnosticFishController::class, 'create'])->name('diagnostic-fishes.create');
+        Route::post('diagnostic-fishes', [DiagnosticFishController::class, 'store'])->name('diagnostic-fishes.store');
+        Route::get('diagnostic-fishes/{diagnosticFish}', [DiagnosticFishController::class, 'show'])->name('diagnostic-fishes.show');
+        Route::get('diagnostic-fishes/{diagnosticFish}/edit', [DiagnosticFishController::class, 'edit'])->name('diagnostic-fishes.edit');
+        Route::put('diagnostic-fishes/{diagnosticFish}', [DiagnosticFishController::class, 'update'])->name('diagnostic-fishes.update');
+        Route::delete('diagnostic-fishes/{diagnosticFish}', [DiagnosticFishController::class, 'destroy'])->name('diagnostic-fishes.destroy');
+    });
+    Route::redirect('staff-instructions', '/dashboard')->name('staff-instructions.index');
+    Route::redirect('staff-instructions/create', '/dashboard')->name('staff-instructions.create');
+    Route::post('staff-instructions', [StaffInstructionController::class, 'store'])->name('staff-instructions.store');
+    Route::post('staff-instructions/{staffInstruction}/read', [StaffInstructionController::class, 'markRead'])->name('staff-instructions.mark-read');
+    Route::post('staff-instructions/{staffInstruction}/done', [StaffInstructionController::class, 'markDone'])->name('staff-instructions.mark-done');
+    Route::get('staff-activities', [StaffActivityController::class, 'index'])->name('staff-activities.index');
+    Route::get('staff-activities/create', [StaffActivityController::class, 'create'])->name('staff-activities.create');
+    Route::post('staff-activities', [StaffActivityController::class, 'store'])->name('staff-activities.store');
+    Route::post('staff-activities/mark-all-read', [StaffActivityController::class, 'markAllRead'])->name('staff-activities.mark-all-read');
+    Route::post('staff-activities/{staffActivity}/read', [StaffActivityController::class, 'markRead'])->name('staff-activities.mark-read');
+    Route::post('appointments/{appointment}/arrived', [AppointmentController::class, 'markArrived'])->name('appointments.arrived');
+    Route::resource('appointments', AppointmentController::class);
+    Route::get('appointments-export', [AppointmentController::class, 'export'])->name('appointments.export');
+    Route::get('appointments-export-pdf', [AppointmentController::class, 'exportPdf'])->name('appointments.export-pdf');
+    Route::get('appointments-calendar', [AppointmentController::class, 'calendar'])->name('appointments.calendar');
+    Route::get('appointments/available-slots', AvailableSlotsApiController::class)->name('appointments.available-slots');
+    Route::resource('availability-slots', AvailabilitySlotController::class)->middleware('role:super_admin');
+    Route::resource('poles', PoleController::class)->middleware('role:super_admin');
+    Route::resource('rooms', RoomController::class)->middleware('role:super_admin,doctor');
+    Route::post('rooms/{room}/status', [RoomController::class, 'updateStatus'])->name('rooms.update-status');
+    Route::resource('machines', MachineController::class)->except(['show'])->middleware('role:super_admin,doctor');
+    Route::resource('prestations', PrestationController::class)->except(['show'])->middleware('role:super_admin,doctor');
+    Route::get('live-cabinet', [LiveCabinetController::class, 'index'])->name('live-cabinet.index');
+    Route::get('live-cabinet/data', [LiveCabinetController::class, 'data'])->name('live-cabinet.data');
+    Route::get('chat', [ChatController::class, 'index'])->name('chat.index');
+    Route::post('chat', [ChatController::class, 'store'])->name('chat.store');
+    Route::post('appointments/{appointment}/mark-arrived', [DoctorPatientConsigneController::class, 'markArrived'])->name('appointments.mark-arrived');
+    Route::post('doctor-patient-consignes', [DoctorPatientConsigneController::class, 'store'])->name('doctor-patient-consignes.store')->middleware('role:super_admin,doctor');
+    Route::redirect('doctor-patient-consignes', '/dashboard')->name('doctor-patient-consignes.index');
+    Route::post('doctor-patient-consignes/{consigne}/acknowledge', [DoctorPatientConsigneController::class, 'acknowledge'])->name('doctor-patient-consignes.acknowledge');
+    Route::post('doctor-patient-consignes/{consigne}/complete', [DoctorPatientConsigneController::class, 'complete'])->name('doctor-patient-consignes.complete');
+    Route::redirect('staff/room-status', '/live-cabinet')->name('staff.room-status');
+    Route::resource('users', UserController::class)->middleware('role:super_admin');
+    Route::get('activity-logs', ActivityLogController::class)->middleware('role:super_admin')->name('activity-logs.index');
+    Route::get('reports/monthly', [ReportController::class, 'monthly'])->name('reports.monthly');
+    Route::get('reports/by-room-prestation', [ReportController::class, 'byRoomAndPrestation'])->name('reports.by-room-prestation');
+    Route::get('reports/by-room-prestation/export-pdf', [ReportController::class, 'exportRoomPrestationPdf'])->name('reports.by-room-prestation.export-pdf');
+    Route::get('reports/by-room-prestation/export-excel', [ReportController::class, 'exportRoomPrestationExcel'])->name('reports.by-room-prestation.export-excel');
+    Route::resource('practitioner-absences', PractitionerAbsenceController::class)->middleware('role:super_admin');
+    Route::get('invoices/export-csv', [InvoiceController::class, 'exportCsv'])->name('invoices.export-csv');
+    Route::get('invoices/export-excel', [InvoiceController::class, 'exportExcel'])->name('invoices.export-excel');
+    Route::get('invoices/ca-by-practitioner', [InvoiceController::class, 'caByPractitioner'])->name('invoices.ca-by-practitioner')->middleware('role:super_admin,doctor');
+    Route::post('invoices/{invoice}/confirm', [InvoiceController::class, 'confirm'])->name('invoices.confirm');
+    Route::get('invoices/{invoice}/export-pdf', [InvoiceController::class, 'exportPdf'])->name('invoices.export-pdf');
+    Route::resource('invoices', InvoiceController::class);
+    Route::post('quotes/{quote}/duplicate', [QuoteController::class, 'duplicate'])->name('quotes.duplicate');
+    Route::get('quotes/{quote}/export-pdf', [QuoteController::class, 'exportPdf'])->name('quotes.export-pdf');
+    Route::post('quotes/{quote}/accept', [QuoteController::class, 'accept'])->name('quotes.accept');
+    Route::post('quotes/{quote}/reject', [QuoteController::class, 'reject'])->name('quotes.reject');
+    Route::post('quotes/{quote}/convert-to-invoice', [QuoteController::class, 'convertToInvoice'])->name('quotes.convert-to-invoice');
+    Route::resource('quotes', QuoteController::class);
+    Route::post('push-subscribe', [PushSubscriptionController::class, 'store'])->name('push.subscribe');
+    Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
+    Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+    Route::post('notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+require __DIR__.'/auth.php';
