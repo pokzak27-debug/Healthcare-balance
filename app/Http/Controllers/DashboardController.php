@@ -1,8 +1,14 @@
 <?php
 
+/**
+ * Propriété de ZAKARIAE BOUKHROUF - Projet HB Smart Clinic.
+ * Tous droits d'utilisation réservés à ZAKARIAE BOUKHROUF pour le cabinet Healthcare Balance.
+ */
+
 namespace App\Http\Controllers;
 
 use App\Models\Appointment;
+use App\Models\CabinetExpense;
 use App\Models\Invoice;
 use App\Models\Patient;
 use App\Models\User;
@@ -49,6 +55,12 @@ class DashboardController extends Controller
         $caLastMonth = (float) Invoice::where('status', 'paid')->whereMonth('invoice_date', now()->subMonth()->month)->whereYear('invoice_date', now()->subMonth()->year)->sum('amount');
         $caEvolution = $caLastMonth > 0 ? round((($caThisMonth - $caLastMonth) / $caLastMonth) * 100, 1) : ($caThisMonth > 0 ? 100 : 0);
 
+        $suppliesThisMonth = (float) CabinetExpense::where('type', CabinetExpense::TYPE_SUPPLY)
+            ->whereMonth('expense_date', now()->month)
+            ->whereYear('expense_date', now()->year)
+            ->sum('amount');
+        $chargesToPay = (float) CabinetExpense::where('type', CabinetExpense::TYPE_CHARGE)->whereNull('paid_at')->sum('amount');
+
         return view('dashboard', compact(
             'todayAppointments',
             'statsByStatus',
@@ -57,7 +69,9 @@ class DashboardController extends Controller
             'totalPatients',
             'caThisMonth',
             'caLastMonth',
-            'caEvolution'
+            'caEvolution',
+            'suppliesThisMonth',
+            'chargesToPay'
         ));
     }
 }

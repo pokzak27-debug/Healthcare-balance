@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * Propriété de ZAKARIAE BOUKHROUF - Projet HB Smart Clinic.
+ * Tous droits d'utilisation réservés à ZAKARIAE BOUKHROUF pour le cabinet Healthcare Balance.
+ */
+
 namespace App\Http\Controllers;
 
 use App\Models\Patient;

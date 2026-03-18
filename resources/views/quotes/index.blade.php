@@ -39,8 +39,7 @@
                                 <td class="px-6 py-4 text-right">{{ format_dh($q->amount) }}</td>
                                 <td class="px-6 py-4">{{ \App\Models\Quote::STATUSES[$q->status] ?? $q->status }}</td>
                                 <td class="px-6 py-4 text-right">
-                                    <a href="{{ route('quotes.export-pdf', $q) }}" class="text-indigo-600 hover:underline text-sm">PDF</a>
-                                    <a href="{{ route('quotes.edit', $q) }}" class="ml-2 text-indigo-600 hover:underline text-sm">Modifier</a>
+                                    <a href="{{ route('quotes.edit', $q) }}" class="text-indigo-600 hover:underline text-sm">Modifier</a>
                                     <form action="{{ route('quotes.destroy', $q) }}" method="POST" class="inline ml-2" onsubmit="return confirm('Supprimer ?');">
                                         @csrf @method('DELETE')
                                         <button type="submit" class="text-red-600 hover:underline text-sm">Supprimer</button>

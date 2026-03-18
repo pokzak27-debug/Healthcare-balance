@@ -24,7 +24,7 @@
         </script>
     </head>
     <body class="font-sans antialiased">
-        <div class="min-h-screen bg-gray-100">
+        <div class="min-h-screen bg-gray-100 flex flex-col">
             @include('layouts.navigation')
 
             <!-- Page Heading -->
@@ -37,9 +37,23 @@
             @endisset
 
             <!-- Page Content -->
-            <main>
+            <main class="flex-1">
                 {{ $slot }}
             </main>
+
+            <footer class="bg-white border-t border-gray-200">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-500 space-y-1 sm:space-y-0">
+                    <div>
+                        Développé par <span class="font-medium text-gray-700">ZAKARIAE BOUKHROUF</span> &nbsp;|&nbsp; © 2026 Tous droits réservés
+                    </div>
+                    <div class="text-[11px] text-gray-400">
+                        Cabinet HEALTHCARE BALANCE – 11 Rue Akid Abdellah Ben Mamous, Safi – 06 33 44 00 49 / 05 24 62 57 63
+                    </div>
+                </div>
+            </footer>
+
+            @include('components.ai-assistant-panel')
         </div>
+        @stack('scripts')
     </body>
 </html>

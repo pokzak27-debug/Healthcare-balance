@@ -2,8 +2,9 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Facture {{ $invoice->number }}</h2>
-            <div class="flex gap-2">
-                <a href="{{ route('invoices.export-pdf', $invoice) }}" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm">Export PDF</a>
+            <div class="flex gap-2 flex-wrap">
+                <a href="{{ route('invoices.export-pdf', $invoice) }}" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm">Export PDF</a>
+                <a href="{{ route('invoices.export-word', $invoice) }}" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm">Export Word</a>
                 @if(can_access_dossier() || !$invoice->isConfirmed())
                     <a href="{{ route('invoices.edit', $invoice) }}" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 text-sm">Modifier</a>
                 @endif
@@ -23,7 +24,17 @@
                 <div><span class="text-gray-500">Date :</span> {{ $invoice->invoice_date->format('d/m/Y') }}</div>
                 <div><span class="text-gray-500">Montant :</span> {{ format_dh($invoice->amount) }}</div>
                 <div><span class="text-gray-500">Statut :</span> {{ \App\Models\Invoice::STATUSES[$invoice->status] ?? $invoice->status }}</div>
-                @if($invoice->description)
+                @php $descriptionLines = $invoice->getDescriptionLines(); @endphp
+                @if(!empty($descriptionLines))
+                    <div>
+                        <span class="text-gray-500">Description :</span>
+                        <ul class="mt-1 list-disc list-inside text-gray-900">
+                            @foreach($descriptionLines as $line)
+                                <li>{{ $line['label'] }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @elseif($invoice->description)
                     <div><span class="text-gray-500">Description :</span> {{ $invoice->description }}</div>
                 @endif
             </div>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AiInteraction;
 use App\Models\ChatMessage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -38,6 +39,19 @@ class ChatController extends Controller
             'body' => $validated['body'],
         ]);
         $msg->load('user');
+
+        AiInteraction::create([
+            'user_id' => Auth::id(),
+            'source' => 'chat',
+            'context_type' => 'chat_message',
+            'related_id' => $msg->id,
+            'prompt' => $validated['body'],
+            'response' => null,
+            'meta' => [
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ],
+        ]);
 
         return response()->json([
             'message' => [

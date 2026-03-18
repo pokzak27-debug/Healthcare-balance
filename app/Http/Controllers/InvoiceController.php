@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Appointment;
 use App\Models\Invoice;
 use App\Exports\InvoicesExport;
+use App\Models\Machine;
 use App\Models\Patient;
+use App\Models\Prestation;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\RedirectResponse;
@@ -17,6 +19,18 @@ class InvoiceController extends Controller
     public function index(Request $request): View
     {
         $query = Invoice::with(['patient', 'appointment'])->orderBy('invoice_date', 'desc');
+
+        if (auth()->user()?->hasRole('staff')) {
+            $query->whereMonth('invoice_date', now()->month)
+                ->whereYear('invoice_date', now()->year);
+        } elseif ($month = $request->get('month')) {
+            $parts = explode('-', $month);
+            if (count($parts) === 2 && can_access_dossier()) {
+                $query->whereYear('invoice_date', $parts[0])
+                    ->whereMonth('invoice_date', (int) $parts[1]);
+            }
+        }
+
         if ($status = $request->get('status')) {
             $query->where('status', $status);
         }
@@ -25,15 +39,28 @@ class InvoiceController extends Controller
         }
         $invoices = $query->paginate(15)->withQueryString();
 
-        return view('invoices.index', compact('invoices'));
+        $archivedMonths = collect();
+        if (can_access_dossier()) {
+            $archivedMonths = Invoice::selectRaw('YEAR(invoice_date) as year, MONTH(invoice_date) as month')
+                ->groupBy('year', 'month')
+                ->orderByDesc('year')
+                ->orderByDesc('month')
+                ->limit(24)
+                ->get()
+                ->map(fn ($r) => sprintf('%04d-%02d', $r->year, $r->month));
+        }
+
+        return view('invoices.index', compact('invoices', 'archivedMonths'));
     }
 
     public function create(Request $request): View
     {
         $patients = Patient::orderBy('last_name')->orderBy('first_name')->get();
         $appointment = $request->get('appointment_id') ? Appointment::find($request->get('appointment_id')) : null;
+        $prestations = Prestation::active()->ordered()->get();
+        $machines = Machine::active()->ordered()->get();
 
-        return view('invoices.create', compact('patients', 'appointment'));
+        return view('invoices.create', compact('patients', 'appointment', 'prestations', 'machines'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -46,10 +73,24 @@ class InvoiceController extends Controller
             'due_date' => ['nullable', 'date'],
             'description' => ['nullable', 'string', 'max:1000'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'prestation_ids' => ['nullable', 'array'],
+            'prestation_ids.*' => ['integer', 'exists:prestations,id'],
+            'machine_ids' => ['nullable', 'array'],
+            'machine_ids.*' => ['integer', 'exists:machines,id'],
         ]);
+
+        $prestationIds = array_values(array_map('intval', $validated['prestation_ids'] ?? []));
+        $machineIds = array_values(array_map('intval', $validated['machine_ids'] ?? []));
+        unset($validated['prestation_ids'], $validated['machine_ids']);
+
         $validated['invoice_date'] = $validated['invoice_date'] ?? now()->toDateString();
-        $validated['status'] = 'paid'; // Facture créée = payée, comptée dans le CA
+        $validated['status'] = 'paid';
         $validated['number'] = Invoice::generateNumber();
+        $validated['custom_data'] = [
+            'prestation_ids' => $prestationIds,
+            'machine_ids' => $machineIds,
+        ];
+        $validated['description'] = $this->buildDescriptionFromIds($prestationIds, $machineIds, $validated['description'] ?? null);
 
         Invoice::create($validated);
 
@@ -72,8 +113,10 @@ class InvoiceController extends Controller
         }
         $invoice->load(['patient', 'appointment']);
         $patients = Patient::orderBy('last_name')->orderBy('first_name')->get();
+        $prestations = Prestation::active()->ordered()->get();
+        $machines = Machine::active()->ordered()->get();
 
-        return view('invoices.edit', compact('invoice', 'patients'));
+        return view('invoices.edit', compact('invoice', 'patients', 'prestations', 'machines'));
     }
 
     public function update(Request $request, Invoice $invoice): RedirectResponse
@@ -90,7 +133,21 @@ class InvoiceController extends Controller
             'due_date' => ['nullable', 'date'],
             'description' => ['nullable', 'string', 'max:1000'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'prestation_ids' => ['nullable', 'array'],
+            'prestation_ids.*' => ['integer', 'exists:prestations,id'],
+            'machine_ids' => ['nullable', 'array'],
+            'machine_ids.*' => ['integer', 'exists:machines,id'],
         ]);
+
+        $prestationIds = array_values(array_map('intval', $validated['prestation_ids'] ?? []));
+        $machineIds = array_values(array_map('intval', $validated['machine_ids'] ?? []));
+        unset($validated['prestation_ids'], $validated['machine_ids']);
+
+        $validated['custom_data'] = array_merge($invoice->custom_data ?? [], [
+            'prestation_ids' => $prestationIds,
+            'machine_ids' => $machineIds,
+        ]);
+        $validated['description'] = $this->buildDescriptionFromIds($prestationIds, $machineIds, $validated['description'] ?? null);
 
         $invoice->update($validated);
 
@@ -129,11 +186,26 @@ class InvoiceController extends Controller
         return $pdf->download('facture-' . $invoice->number . '.pdf');
     }
 
+    public function exportWord(Invoice $invoice)
+    {
+        $invoice->load(['patient', 'appointment']);
+        $html = view('word.invoice', compact('invoice'))->render();
+
+        return response($html, 200, [
+            'Content-Type' => 'application/msword',
+            'Content-Disposition' => 'attachment; filename="facture-' . $invoice->number . '.doc"',
+        ]);
+    }
+
     public function exportExcel(Request $request)
     {
         $status = $request->get('status');
         $from = $request->get('from');
         $to = $request->get('to');
+        if (auth()->user()?->hasRole('staff') && ! $from && ! $to) {
+            $from = now()->startOfMonth()->format('Y-m-d');
+            $to = now()->format('Y-m-d');
+        }
 
         return Excel::download(
             new InvoicesExport($status, $from, $to),
@@ -144,6 +216,9 @@ class InvoiceController extends Controller
     public function exportCsv(Request $request)
     {
         $query = Invoice::with(['patient', 'appointment.user'])->orderBy('invoice_date', 'desc');
+        if (auth()->user()?->hasRole('staff')) {
+            $query->whereMonth('invoice_date', now()->month)->whereYear('invoice_date', now()->year);
+        }
         if ($status = $request->get('status')) {
             $query->where('status', $status);
         }
@@ -219,5 +294,29 @@ class InvoiceController extends Controller
         }
 
         return view('invoices.ca-by-practitioner', compact('data', 'from', 'to', 'totalInvoices', 'totalAmount'));
+    }
+
+    private function buildDescriptionFromIds(array $prestationIds, array $machineIds, ?string $fallbackText): string
+    {
+        $parts = [];
+        if (! empty($prestationIds)) {
+            $byId = Prestation::whereIn('id', $prestationIds)->get()->keyBy('id');
+            $names = collect($prestationIds)->map(fn ($id) => $byId->get($id)?->name)->filter()->toArray();
+            $parts[] = implode(', ', $names);
+        }
+        if (! empty($machineIds)) {
+            $byId = Machine::whereIn('id', $machineIds)->get()->keyBy('id');
+            $names = collect($machineIds)->map(fn ($id) => $byId->get($id)?->name)->filter()->toArray();
+            $parts[] = implode(', ', $names);
+        }
+        if (! empty($parts)) {
+            $desc = implode(' — ', $parts);
+            if ($fallbackText !== null && $fallbackText !== '') {
+                $desc .= ' — ' . $fallbackText;
+            }
+            return $desc;
+        }
+
+        return $fallbackText ?? '';
     }
 }

@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * Propriété de ZAKARIAE BOUKHROUF - Projet HB Smart Clinic.
+ * Tous droits d'utilisation réservés à ZAKARIAE BOUKHROUF pour le cabinet Healthcare Balance.
+ */
+
 namespace App\Http\Controllers;
 
 use App\Models\Role;
@@ -7,6 +12,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
@@ -30,15 +36,22 @@ class UserController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'unique:users,email'],
-            'password' => ['required', 'confirmed', Password::defaults()],
             'role_id' => ['required', 'exists:roles,id'],
             'is_active' => ['boolean'],
-        ]);
-        $validated['password'] = Hash::make($validated['password']);
+        ];
+        if ($request->user()->hasRole('super_admin')) {
+            $rules['password'] = ['required', 'confirmed', Password::defaults()];
+        }
+        $validated = $request->validate($rules);
         $validated['is_active'] = $request->boolean('is_active', true);
+        if ($request->user()->hasRole('super_admin') && ! empty($validated['password'])) {
+            $validated['password'] = Hash::make($validated['password']);
+        } else {
+            $validated['password'] = Hash::make(Str::random(32));
+        }
 
         User::create($validated);
 
@@ -61,16 +74,19 @@ class UserController extends Controller
 
     public function update(Request $request, User $user): RedirectResponse
     {
-        $validated = $request->validate([
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', Rule::unique('users')->ignore($user->id)],
-            'password' => ['nullable', 'confirmed', Password::defaults()],
             'role_id' => ['required', 'exists:roles,id'],
             'is_active' => ['boolean'],
-        ]);
+        ];
+        if ($request->user()->hasRole('super_admin')) {
+            $rules['password'] = ['nullable', 'confirmed', Password::defaults()];
+        }
+        $validated = $request->validate($rules);
         $validated['is_active'] = $request->boolean('is_active');
 
-        if (! empty($validated['password'])) {
+        if ($request->user()->hasRole('super_admin') && ! empty($validated['password'] ?? null)) {
             $validated['password'] = Hash::make($validated['password']);
         } else {
             unset($validated['password']);

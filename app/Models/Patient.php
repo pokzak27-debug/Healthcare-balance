@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Patient extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'first_name',
         'last_name',
@@ -55,6 +57,11 @@ class Patient extends Model
     public function diagnosticFishes(): HasMany
     {
         return $this->hasMany(DiagnosticFish::class)->orderByDesc('date_examen')->orderByDesc('created_at');
+    }
+
+    public function scheduleItems(): HasMany
+    {
+        return $this->hasMany(PatientScheduleItem::class)->orderBy('session_date')->orderBy('session_time');
     }
 
     protected static function booted(): void

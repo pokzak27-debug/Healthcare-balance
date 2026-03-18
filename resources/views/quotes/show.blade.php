@@ -7,7 +7,6 @@
                     @csrf
                     <button type="submit" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 text-sm">Dupliquer</button>
                 </form>
-                <a href="{{ route('quotes.export-pdf', $quote) }}" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm">Export PDF</a>
                 @if($quote->canBeAccepted())
                     <form action="{{ route('quotes.accept', $quote) }}" method="POST" class="inline">
                         @csrf
@@ -27,6 +26,8 @@
                 @if($quote->invoice)
                     <a href="{{ route('invoices.show', $quote->invoice) }}" class="px-4 py-2 bg-gray-200 rounded-md text-sm">Voir facture</a>
                 @endif
+                <a href="{{ route('quotes.export-pdf', $quote) }}" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm">Export PDF</a>
+                <a href="{{ route('quotes.export-word', $quote) }}" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm">Export Word</a>
                 <a href="{{ route('quotes.edit', $quote) }}" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 text-sm">Modifier</a>
                 <a href="{{ route('quotes.index') }}" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 text-sm">← Retour</a>
             </div>

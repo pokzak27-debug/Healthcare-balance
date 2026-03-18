@@ -3,7 +3,6 @@
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Factures</h2>
             <div class="flex gap-2">
-                <a href="{{ route('invoices.export-csv', request()->query()) }}" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 text-sm">Export CSV</a>
                 <a href="{{ route('invoices.export-excel', request()->query()) }}" class="px-4 py-2 bg-emerald-700 text-white rounded-md hover:bg-emerald-800 text-sm">Export Excel</a>
                 @if(can_access_dossier())
                     <a href="{{ route('invoices.ca-by-practitioner') }}" class="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 text-sm">Chiffre d'affaires</a>
@@ -17,7 +16,19 @@
             @if(session('success'))
                 <div class="mb-4 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg">{{ session('success') }}</div>
             @endif
-            <form method="GET" class="mb-4 flex gap-2">
+            @if(Auth::user()->hasRole('staff'))
+                <p class="mb-4 text-sm text-gray-600">Affichage des factures du mois en cours ({{ now()->translatedFormat('F Y') }}). Les archives ne sont accessibles qu’aux docteurs.</p>
+            @endif
+            <form method="GET" class="mb-4 flex flex-wrap gap-2 items-center">
+                @if(can_access_dossier() && $archivedMonths->isNotEmpty())
+                    <select name="month" onchange="this.form.submit()" class="rounded-md border-gray-300">
+                        <option value="">Mois en cours / Toutes</option>
+                        @foreach($archivedMonths as $m)
+                            @php $dt = \Carbon\Carbon::createFromFormat('Y-m', $m); @endphp
+                            <option value="{{ $m }}" {{ request('month') == $m ? 'selected' : '' }}>{{ $dt->translatedFormat('F Y') }}</option>
+                        @endforeach
+                    </select>
+                @endif
                 <select name="status" onchange="this.form.submit()" class="rounded-md border-gray-300">
                     <option value="">Tous les statuts</option>
                     @foreach(\App\Models\Invoice::STATUSES as $k => $v)
@@ -46,7 +57,6 @@
                                 <td class="px-6 py-4 text-right">{{ format_dh($inv->amount) }}</td>
                                 <td class="px-6 py-4">{{ \App\Models\Invoice::STATUSES[$inv->status] ?? $inv->status }}</td>
                                 <td class="px-6 py-4 text-right">
-                                    <a href="{{ route('invoices.export-pdf', $inv) }}" class="text-indigo-600 hover:underline text-sm">PDF</a>
                                     @if(can_access_dossier())
                                         <a href="{{ route('invoices.edit', $inv) }}" class="ml-2 text-indigo-600 hover:underline text-sm">Modifier</a>
                                         <form action="{{ route('invoices.destroy', $inv) }}" method="POST" class="inline ml-2" onsubmit="return confirm('Supprimer ?');">

@@ -26,12 +26,17 @@ use App\Http\Controllers\MachineController;
 use App\Http\Controllers\PrestationController;
 use App\Http\Controllers\LiveCabinetController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\CabinetExpenseController;
+use App\Http\Controllers\AiAssistantController;
+use App\Http\Controllers\BillingDashboardController;
 use App\Http\Controllers\DoctorPatientConsigneController;
+use App\Http\Controllers\PatientScheduleController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
+Route::view('/about', 'about')->name('about');
 Route::middleware('throttle:30,1')->group(function () {
     Route::get('rendez-vous', [BookingController::class, 'index'])->name('booking.index');
     Route::get('rendez-vous/slots', [BookingController::class, 'slots'])->name('booking.slots');
@@ -42,9 +47,27 @@ Route::get('/dashboard', DashboardController::class)->middleware(['auth', 'verif
 
 Route::get('search', SearchController::class)->middleware(['auth', 'role:super_admin,doctor,staff'])->name('search');
 
+Route::get('ai-assistant/logs', [AiAssistantController::class, 'logs'])->name('ai-assistant.logs')->middleware(['auth', 'role:super_admin,doctor']);
+Route::get('ai-assistant/logs/{log}', [AiAssistantController::class, 'show'])->name('ai-assistant.logs.show')->middleware(['auth', 'role:super_admin,doctor']);
+Route::post('ai-assistant/logs/{log}/archive', [AiAssistantController::class, 'archive'])->name('ai-assistant.logs.archive')->middleware(['auth', 'role:super_admin']);
+Route::delete('ai-assistant/logs/{log}', [AiAssistantController::class, 'destroy'])->name('ai-assistant.logs.destroy')->middleware(['auth', 'role:super_admin']);
+Route::get('ai-assistant/patients', [AiAssistantController::class, 'searchPatients'])->name('ai-assistant.patients')->middleware(['auth', 'role:super_admin,doctor']);
+Route::get('ai-assistant/config', [AiAssistantController::class, 'config'])->name('ai-assistant.config')->middleware(['auth', 'role:super_admin,doctor']);
+Route::post('ai-assistant/protocol', [AiAssistantController::class, 'suggestProtocol'])->name('ai-assistant.protocol')->middleware(['auth', 'role:super_admin,doctor']);
+// Route tarification IA supprimée de l'UI; désactivée côté web.
+// Route::post('ai-assistant/pricing', [AiAssistantController::class, 'suggestPricing'])->name('ai-assistant.pricing')->middleware(['auth', 'role:super_admin,doctor']);
+Route::post('ai-assistant/consultation', [AiAssistantController::class, 'consultationSupport'])->name('ai-assistant.consultation')->middleware(['auth', 'role:super_admin,doctor']);
+Route::post('ai-assistant/ask', [AiAssistantController::class, 'ask'])->name('ai-assistant.ask')->middleware(['auth', 'role:super_admin,doctor']);
+Route::post('ai-assistant/rapport-cabinet', [AiAssistantController::class, 'rapportCabinet'])->name('ai-assistant.rapport-cabinet')->middleware(['auth', 'role:super_admin,doctor']);
+
 Route::middleware(['auth', 'role:super_admin,doctor,staff'])->group(function () {
     Route::get('patients/{patient}/export-pdf', [PatientController::class, 'exportPdf'])->name('patients.export-pdf');
     Route::get('patients/{patient}/fiche', [PatientController::class, 'fiche'])->name('patients.fiche');
+    Route::get('patients/{patient}/schedule', [PatientScheduleController::class, 'show'])->name('patients.schedule.show');
+    Route::post('patients/{patient}/schedule', [PatientScheduleController::class, 'update'])->name('patients.schedule.update');
+    Route::post('patients/{patient}/schedule/initialize', [PatientScheduleController::class, 'initialize'])->name('patients.schedule.initialize');
+    Route::get('patients/{patient}/schedule/export-pdf', [PatientScheduleController::class, 'exportPdf'])->name('patients.schedule.export-pdf');
+    Route::get('patients/{patient}/schedule/export-word', [PatientScheduleController::class, 'exportWord'])->name('patients.schedule.export-word');
     Route::resource('patients', PatientController::class);
     Route::resource('medical-entries', MedicalEntryController::class)->only(['create', 'store', 'edit', 'update', 'destroy'])->middleware('role:super_admin,doctor');
     Route::middleware('role:super_admin,doctor')->group(function () {
@@ -91,18 +114,25 @@ Route::middleware(['auth', 'role:super_admin,doctor,staff'])->group(function () 
     Route::resource('users', UserController::class)->middleware('role:super_admin');
     Route::get('activity-logs', ActivityLogController::class)->middleware('role:super_admin')->name('activity-logs.index');
     Route::get('reports/monthly', [ReportController::class, 'monthly'])->name('reports.monthly');
+    Route::get('reports/monthly/{month}/download', [ReportController::class, 'downloadMonthlyReport'])->name('reports.monthly.download')->where('month', '[0-9]{4}-[0-9]{2}')->middleware('role:super_admin,doctor');
+    Route::get('reports/stats', [ReportController::class, 'stats'])->name('reports.stats')->middleware('role:super_admin,doctor');
     Route::get('reports/by-room-prestation', [ReportController::class, 'byRoomAndPrestation'])->name('reports.by-room-prestation');
     Route::get('reports/by-room-prestation/export-pdf', [ReportController::class, 'exportRoomPrestationPdf'])->name('reports.by-room-prestation.export-pdf');
     Route::get('reports/by-room-prestation/export-excel', [ReportController::class, 'exportRoomPrestationExcel'])->name('reports.by-room-prestation.export-excel');
     Route::resource('practitioner-absences', PractitionerAbsenceController::class)->middleware('role:super_admin');
+    Route::get('cabinet-expenses/{cabinetExpense}/mark-paid', [CabinetExpenseController::class, 'markPaid'])->name('cabinet-expenses.mark-paid');
+    Route::resource('cabinet-expenses', CabinetExpenseController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
+    Route::get('facturation', BillingDashboardController::class)->name('billing.dashboard');
     Route::get('invoices/export-csv', [InvoiceController::class, 'exportCsv'])->name('invoices.export-csv');
     Route::get('invoices/export-excel', [InvoiceController::class, 'exportExcel'])->name('invoices.export-excel');
     Route::get('invoices/ca-by-practitioner', [InvoiceController::class, 'caByPractitioner'])->name('invoices.ca-by-practitioner')->middleware('role:super_admin,doctor');
     Route::post('invoices/{invoice}/confirm', [InvoiceController::class, 'confirm'])->name('invoices.confirm');
     Route::get('invoices/{invoice}/export-pdf', [InvoiceController::class, 'exportPdf'])->name('invoices.export-pdf');
+    Route::get('invoices/{invoice}/export-word', [InvoiceController::class, 'exportWord'])->name('invoices.export-word');
     Route::resource('invoices', InvoiceController::class);
     Route::post('quotes/{quote}/duplicate', [QuoteController::class, 'duplicate'])->name('quotes.duplicate');
     Route::get('quotes/{quote}/export-pdf', [QuoteController::class, 'exportPdf'])->name('quotes.export-pdf');
+    Route::get('quotes/{quote}/export-word', [QuoteController::class, 'exportWord'])->name('quotes.export-word');
     Route::post('quotes/{quote}/accept', [QuoteController::class, 'accept'])->name('quotes.accept');
     Route::post('quotes/{quote}/reject', [QuoteController::class, 'reject'])->name('quotes.reject');
     Route::post('quotes/{quote}/convert-to-invoice', [QuoteController::class, 'convertToInvoice'])->name('quotes.convert-to-invoice');
@@ -115,6 +145,13 @@ Route::middleware(['auth', 'role:super_admin,doctor,staff'])->group(function () 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    // Verrouillage mot de passe : seul le Super Admin peut accéder à la gestion du mot de passe.
+    Route::get('/settings/password', function () {
+        if (! auth()->user()?->hasRole('super_admin')) {
+            abort(403, 'Accès non autorisé.');
+        }
+        return redirect()->route('profile.edit');
+    })->name('settings.password');
 });
 
 require __DIR__.'/auth.php';

@@ -46,8 +46,34 @@ class QuoteController extends Controller
             'valid_until' => ['nullable', 'date'],
             'description' => ['nullable', 'string', 'max:1000'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'diagnostic' => ['nullable', 'string', 'max:255'],
+            'treating_doctor' => ['nullable', 'string', 'max:255'],
+            'sessions_count' => ['nullable', 'integer', 'min:1'],
+            'sessions_rhythm' => ['nullable', 'string', 'max:255'],
+            'treatment_start' => ['nullable', 'date'],
+            'treatment_end' => ['nullable', 'date'],
+            'unit_price' => ['nullable', 'numeric', 'min:0'],
         ]);
         $validated['number'] = Quote::generateNumber();
+        $custom = [
+            'diagnostic' => $validated['diagnostic'] ?? null,
+            'treating_doctor' => $validated['treating_doctor'] ?? null,
+            'sessions_count' => $validated['sessions_count'] ?? null,
+            'sessions_rhythm' => $validated['sessions_rhythm'] ?? null,
+            'treatment_start' => $validated['treatment_start'] ?? null,
+            'treatment_end' => $validated['treatment_end'] ?? null,
+            'unit_price' => $validated['unit_price'] ?? null,
+        ];
+        unset(
+            $validated['diagnostic'],
+            $validated['treating_doctor'],
+            $validated['sessions_count'],
+            $validated['sessions_rhythm'],
+            $validated['treatment_start'],
+            $validated['treatment_end'],
+            $validated['unit_price']
+        );
+        $validated['custom_data'] = $custom;
 
         Quote::create($validated);
 
@@ -80,7 +106,33 @@ class QuoteController extends Controller
             'valid_until' => ['nullable', 'date'],
             'description' => ['nullable', 'string', 'max:1000'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'diagnostic' => ['nullable', 'string', 'max:255'],
+            'treating_doctor' => ['nullable', 'string', 'max:255'],
+            'sessions_count' => ['nullable', 'integer', 'min:1'],
+            'sessions_rhythm' => ['nullable', 'string', 'max:255'],
+            'treatment_start' => ['nullable', 'date'],
+            'treatment_end' => ['nullable', 'date'],
+            'unit_price' => ['nullable', 'numeric', 'min:0'],
         ]);
+        $custom = array_merge($quote->custom_data ?? [], [
+            'diagnostic' => $validated['diagnostic'] ?? null,
+            'treating_doctor' => $validated['treating_doctor'] ?? null,
+            'sessions_count' => $validated['sessions_count'] ?? null,
+            'sessions_rhythm' => $validated['sessions_rhythm'] ?? null,
+            'treatment_start' => $validated['treatment_start'] ?? null,
+            'treatment_end' => $validated['treatment_end'] ?? null,
+            'unit_price' => $validated['unit_price'] ?? null,
+        ]);
+        unset(
+            $validated['diagnostic'],
+            $validated['treating_doctor'],
+            $validated['sessions_count'],
+            $validated['sessions_rhythm'],
+            $validated['treatment_start'],
+            $validated['treatment_end'],
+            $validated['unit_price']
+        );
+        $validated['custom_data'] = $custom;
 
         $quote->update($validated);
 
@@ -154,5 +206,16 @@ class QuoteController extends Controller
         $pdf = Pdf::loadView('pdf.quote', compact('quote'));
 
         return $pdf->download('devis-' . $quote->number . '.pdf');
+    }
+
+    public function exportWord(Quote $quote)
+    {
+        $quote->load(['patient', 'appointment']);
+        $html = view('word.quote', compact('quote'))->render();
+
+        return response($html, 200, [
+            'Content-Type' => 'application/msword',
+            'Content-Disposition' => 'attachment; filename="devis-' . $quote->number . '.doc"',
+        ]);
     }
 }

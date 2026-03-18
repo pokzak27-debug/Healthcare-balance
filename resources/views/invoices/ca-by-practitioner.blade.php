@@ -2,11 +2,6 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Chiffre d'affaires</h2>
-            <a href="{{ route('invoices.ca-by-practitioner', ['format' => 'csv', 'from' => $from, 'to' => $to]) }}" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm">Export CSV</a>
-            <form action="{{ route('reports.monthly') }}" method="GET" class="inline flex items-center gap-2">
-                <input type="month" name="month" value="{{ now()->format('Y-m') }}" class="rounded-md border-gray-300 text-sm">
-                <button type="submit" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 text-sm">Rapport PDF</button>
-            </form>
         </div>
     </x-slot>
     <div class="py-12">

@@ -3,10 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Prunable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ActivityLog extends Model
 {
+    use Prunable;
     protected $table = 'activity_logs';
 
     protected $fillable = [
@@ -43,5 +45,10 @@ class ActivityLog extends Model
             'old_values' => $oldValues,
             'new_values' => $newValues,
         ]);
+    }
+
+    public function prunable()
+    {
+        return static::where('created_at', '<', now()->subDays(90));
     }
 }

@@ -16,10 +16,10 @@
                 @endif
             </p>
 
-            {{-- Accès rapide : Cabinet live + Calendrier + Facturation --}}
+            {{-- Accès rapide : Cabinet live + Calendrier + Facturation (assistants seulement) + Logs (super admin) --}}
             <section class="mb-10">
                 <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Accès rapide</h3>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 {{ Auth::user()->hasRole('staff') ? 'lg:grid-cols-4' : 'lg:grid-cols-3' }} gap-4">
                     <a href="{{ route('live-cabinet.index') }}" class="flex items-center gap-3 p-5 min-h-[88px] bg-white shadow-sm sm:rounded-lg hover:shadow-md transition border-l-4 border-amber-500">
                         <div class="flex-shrink-0 w-12 h-12 rounded-lg bg-amber-100 flex items-center justify-center">
                             <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
@@ -38,20 +38,55 @@
                             <p class="text-sm text-gray-500 truncate">Rendez-vous</p>
                         </div>
                     </a>
-                    <a href="{{ route('invoices.index') }}" class="flex items-center gap-3 p-5 min-h-[88px] bg-white shadow-sm sm:rounded-lg hover:shadow-md transition border-l-4 border-teal-500">
+                    @if(can_access_dossier())
+                    <a href="{{ route('reports.stats') }}" class="flex items-center gap-3 p-5 min-h-[88px] bg-white shadow-sm sm:rounded-lg hover:shadow-md transition border-l-4 border-violet-500">
+                        <div class="flex-shrink-0 w-12 h-12 rounded-lg bg-violet-100 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="font-medium text-gray-900 truncate">Répartition</p>
+                            <p class="text-sm text-gray-500 truncate">Par mois / année</p>
+                        </div>
+                    </a>
+                    @endif
+                    @if(Auth::user()->hasRole('staff'))
+                    <a href="{{ route('billing.dashboard') }}" class="flex items-center gap-3 p-5 min-h-[88px] bg-white shadow-sm sm:rounded-lg hover:shadow-md transition border-l-4 border-teal-500">
                         <div class="flex-shrink-0 w-12 h-12 rounded-lg bg-teal-100 flex items-center justify-center">
                             <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>
                         </div>
                         <div class="min-w-0">
                             <p class="font-medium text-gray-900 truncate">Facturation</p>
-                            <p class="text-sm text-gray-500 truncate">Factures</p>
+                            <p class="text-sm text-gray-500 truncate">Devis & factures · PDF / Word</p>
                         </div>
                     </a>
+                    <a href="{{ route('cabinet-expenses.index') }}" class="flex items-center gap-3 p-5 min-h-[88px] bg-white shadow-sm sm:rounded-lg hover:shadow-md transition border-l-4 border-slate-500">
+                        <div class="flex-shrink-0 w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="font-medium text-gray-900 truncate">Besoins cabinet</p>
+                            <p class="text-sm text-gray-500 truncate">Fournitures & charges</p>
+                        </div>
+                    </a>
+                    @endif
+                    @if(Auth::user()->hasRole('super_admin'))
+                    <a href="{{ route('activity-logs.index') }}" class="flex items-center gap-3 p-5 min-h-[88px] bg-white shadow-sm sm:rounded-lg hover:shadow-md transition border-l-4 border-red-500">
+                        <div class="flex-shrink-0 w-12 h-12 rounded-lg bg-red-100 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M4.54 4.54l14.92 14.92M12 2a10 10 0 1010 10A10.011 10.011 0 0012 2z"/>
+                            </svg>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="font-medium text-gray-900 truncate">Logs activité</p>
+                            <p class="text-sm text-gray-500 truncate">Traçabilité complète (Super Admin)</p>
+                        </div>
+                    </a>
+                    @endif
                 </div>
             </section>
 
             <section class="mb-10">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     @if(!Auth::user()->hasRole('staff'))
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-5">
                         <p class="text-sm font-medium text-gray-500">Patients</p>
@@ -76,6 +111,18 @@
                         <a href="{{ route('invoices.ca-by-practitioner') }}" class="mt-2 text-sm text-indigo-600 hover:underline">Voir le CA</a>
                     </div>
                     @endif
+                    <a href="{{ route('cabinet-expenses.index') }}" class="block bg-white overflow-hidden shadow-sm sm:rounded-lg p-5 hover:shadow-md transition">
+                        <p class="text-sm font-medium text-gray-500">Besoins cabinet (ce mois)</p>
+                        <p class="mt-1 text-2xl font-semibold text-teal-600">{{ format_dh($suppliesThisMonth ?? 0) }}</p>
+                        <p class="mt-1 text-xs text-gray-400">Fournitures : huiles, bandages…</p>
+                        <span class="mt-2 text-sm text-indigo-600 hover:underline">Voir / Saisir</span>
+                    </a>
+                    <a href="{{ route('cabinet-expenses.index') }}?type=charge" class="block bg-white overflow-hidden shadow-sm sm:rounded-lg p-5 hover:shadow-md transition">
+                        <p class="text-sm font-medium text-gray-500">Charges à payer</p>
+                        <p class="mt-1 text-2xl font-semibold text-amber-600">{{ format_dh($chargesToPay ?? 0) }}</p>
+                        <p class="mt-1 text-xs text-gray-400">Loyer, électricité…</p>
+                        <span class="mt-2 text-sm text-indigo-600 hover:underline">Voir / Saisir</span>
+                    </a>
                 </div>
             </section>
 
@@ -184,15 +231,13 @@
             <section class="mb-10">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {{-- Bloc rendez-vous --}}
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg {{ !can_access_dossier() ? 'lg:col-span-2' : '' }}">
+                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg {{ !can_access_dossier() ? 'lg:col-span-2' : '' }}">
                     <div class="p-4 border-b border-gray-200 flex justify-between items-center">
                         <h3 class="font-semibold text-gray-900">Rendez-vous du jour</h3>
-                        <a href="{{ route('appointments.calendar') }}" class="text-sm text-indigo-600 hover:underline">Voir le calendrier</a>
                     </div>
                     <div class="p-6">
                         @if($todayAppointments->isEmpty())
                             <p class="text-gray-500">Aucun rendez-vous aujourd'hui.</p>
-                            <a href="{{ route('appointments.create') }}" class="mt-4 inline-block text-sm text-indigo-600 hover:underline">Prendre un rendez-vous</a>
                         @else
                             <ul class="divide-y divide-gray-200">
                                 @foreach($todayAppointments as $apt)
@@ -223,69 +268,6 @@
                     </div>
                 </div>
 
-                {{-- Stats par statut, pôle, praticien (docteur et super_admin uniquement) --}}
-                @if(can_access_dossier())
-                <div class="space-y-6">
-                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                        <h3 class="font-semibold text-gray-900 mb-4">Répartition par statut</h3>
-                        @php $statusColors = ['scheduled' => 'bg-blue-500', 'completed' => 'bg-emerald-500', 'cancelled' => 'bg-red-400', 'no_show' => 'bg-gray-400']; $totalStatus = array_sum($statsByStatus); @endphp
-                        <div class="space-y-3">
-                            @foreach(['scheduled' => 'Prévu', 'completed' => 'Honoré', 'cancelled' => 'Annulé', 'no_show' => 'Absent'] as $key => $label)
-                                @php $val = $statsByStatus[$key] ?? 0; $pct = $totalStatus > 0 ? ($val / $totalStatus) * 100 : 0; @endphp
-                                <div>
-                                    <div class="flex justify-between text-sm mb-0.5">
-                                        <span class="text-gray-600">{{ $label }}</span>
-                                        <span class="font-medium text-gray-900">{{ $val }}</span>
-                                    </div>
-                                    <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
-                                        <div class="h-full {{ $statusColors[$key] ?? 'bg-gray-400' }} rounded-full transition-all" style="width: {{ $pct }}%"></div>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                        <h3 class="font-semibold text-gray-900 mb-4">Par pôle</h3>
-                        @if($statsByPole->isEmpty())
-                            <p class="text-gray-500 text-sm">Aucune donnée.</p>
-                        @else
-                            @php $maxPole = $statsByPole->max('total') ?: 1; @endphp
-                            <div class="space-y-2">
-                                @foreach($statsByPole as $row)
-                                    <div>
-                                        <div class="flex justify-between text-sm mb-0.5">
-                                            <span class="text-gray-600">{{ $row->name }}</span>
-                                            <span class="font-medium text-gray-900">{{ $row->total }}</span>
-                                        </div>
-                                        <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                            <div class="h-full bg-indigo-400 rounded-full" style="width: {{ ($row->total / $maxPole) * 100 }}%"></div>
-                                        </div>
-                                    </div>
-                                @endforeach
-                            </div>
-                        @endif
-                    </div>
-                    @if($statsByPractitioner->isNotEmpty())
-                        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                            <h3 class="font-semibold text-gray-900 mb-4">Par praticien</h3>
-                            @php $maxPrat = $statsByPractitioner->max('total') ?: 1; @endphp
-                            <div class="space-y-2">
-                                @foreach($statsByPractitioner as $row)
-                                    <div>
-                                        <div class="flex justify-between text-sm mb-0.5">
-                                            <span class="text-gray-600">{{ $row->name }}</span>
-                                            <span class="font-medium text-gray-900">{{ $row->total }}</span>
-                                        </div>
-                                        <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                            <div class="h-full bg-violet-400 rounded-full" style="width: {{ ($row->total / $maxPrat) * 100 }}%"></div>
-                                        </div>
-                                    </div>
-                                @endforeach
-                            </div>
-                        </div>
-                    @endif
-                </div>
-                @endif
                 </div>
             </section>
 

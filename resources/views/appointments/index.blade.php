@@ -5,12 +5,6 @@
                 Rendez-vous
             </h2>
             <div class="flex gap-2">
-                <a href="{{ route('appointments.export', request()->query()) }}" class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 text-sm">
-                    Exporter CSV
-                </a>
-                <a href="{{ route('appointments.export-pdf', request()->query()) }}" class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 text-sm">
-                    Exporter PDF
-                </a>
                 <a href="{{ route('appointments.calendar') }}" class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 text-sm">
                     Calendrier
                 </a>

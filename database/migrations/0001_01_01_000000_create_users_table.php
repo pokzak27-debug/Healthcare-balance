@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * Propriété de ZAKARIAE BOUKHROUF - Projet HB Smart Clinic.
+ * Tous droits d'utilisation réservés à ZAKARIAE BOUKHROUF pour le cabinet Healthcare Balance.
+ */
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;

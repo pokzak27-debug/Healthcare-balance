@@ -53,4 +53,31 @@ class Invoice extends Model
 
         return 'FAC-' . $year . '-' . str_pad((string) $seq, 4, '0', STR_PAD_LEFT);
     }
+
+    /** Lignes de description : prestations et machines sélectionnées (pour affichage facture / PDF). */
+    public function getDescriptionLines(): array
+    {
+        $lines = [];
+        $data = $this->custom_data ?? [];
+        $prestationIds = $data['prestation_ids'] ?? [];
+        $machineIds = $data['machine_ids'] ?? [];
+
+        if (! empty($prestationIds)) {
+            $names = Prestation::whereIn('id', $prestationIds)->pluck('name')->toArray();
+            foreach ($names as $name) {
+                $lines[] = ['type' => 'prestation', 'label' => $name];
+            }
+        }
+        if (! empty($machineIds)) {
+            $names = Machine::whereIn('id', $machineIds)->pluck('name')->toArray();
+            foreach ($names as $name) {
+                $lines[] = ['type' => 'machine', 'label' => $name];
+            }
+        }
+        if (empty($lines) && $this->description) {
+            $lines[] = ['type' => 'text', 'label' => $this->description];
+        }
+
+        return $lines;
+    }
 }

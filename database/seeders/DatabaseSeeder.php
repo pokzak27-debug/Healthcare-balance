@@ -13,13 +13,22 @@ class DatabaseSeeder extends Seeder
     /**
      * Seed the application's database.
      */
+    /**
+     * Seed production : rôles, un seul Super Admin, catalogue SPECTA (MedCryo PRO, EMSculpt).
+     * Pour données de démo (patients, rendez-vous, etc.) exécuter en plus :
+     *   php artisan db:seed --class=UserSeeder
+     *   php artisan db:seed --class=PoleSeeder
+     *   php artisan db:seed --class=HealthcareBalanceDemoSeeder
+     *   php artisan db:seed --class=PatientSeeder
+     *   php artisan db:seed --class=DemoMedicalDataSeeder
+     */
     public function run(): void
     {
         $this->call([
             RoleSeeder::class,
             PoleSeeder::class,
-            UserSeeder::class,
-            PatientSeeder::class,
+            SuperAdminOnlySeeder::class,
+            SpectaCatalogSeeder::class,
         ]);
     }
 }

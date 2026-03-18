@@ -32,8 +32,28 @@
                             <input type="date" name="invoice_date" required value="{{ $invoice->invoice_date->format('Y-m-d') }}" class="mt-1 block w-full rounded-md border-gray-300">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Description</label>
-                            <input type="text" name="description" value="{{ old('description', $invoice->description) }}" class="mt-1 block w-full rounded-md border-gray-300">
+                            <label class="block text-sm font-medium text-gray-700">Prestations</label>
+                            @php $selectedPrestationIds = old('prestation_ids', $invoice->custom_data['prestation_ids'] ?? []); @endphp
+                            <select name="prestation_ids[]" multiple class="mt-1 block w-full rounded-md border-gray-300" size="5">
+                                @foreach($prestations as $p)
+                                    <option value="{{ $p->id }}" {{ in_array($p->id, $selectedPrestationIds) ? 'selected' : '' }}>{{ $p->name }}</option>
+                                @endforeach
+                            </select>
+                            <p class="mt-0.5 text-xs text-gray-500">Ctrl (ou Cmd) pour sélectionner plusieurs.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Machines</label>
+                            @php $selectedMachineIds = old('machine_ids', $invoice->custom_data['machine_ids'] ?? []); @endphp
+                            <select name="machine_ids[]" multiple class="mt-1 block w-full rounded-md border-gray-300" size="4">
+                                @foreach($machines as $m)
+                                    <option value="{{ $m->id }}" {{ in_array($m->id, $selectedMachineIds) ? 'selected' : '' }}>{{ $m->name }}</option>
+                                @endforeach
+                            </select>
+                            <p class="mt-0.5 text-xs text-gray-500">Ctrl (ou Cmd) pour sélectionner plusieurs.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Description complémentaire</label>
+                            <input type="text" name="description" value="{{ old('description', $invoice->description) }}" class="mt-1 block w-full rounded-md border-gray-300" placeholder="Texte libre si besoin...">
                         </div>
                     </div>
                     <div class="mt-6 flex gap-3">

@@ -5,13 +5,16 @@
             <div class="flex">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}">
-                        <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
+                    <a href="{{ route('dashboard') }}" class="flex items-center gap-2">
+                        <x-application-logo class="block h-8 w-auto text-indigo-600" />
+                        <span class="hidden sm:inline text-sm font-semibold text-gray-800 tracking-tight">
+                            Healthcare Balance
+                        </span>
                     </a>
                 </div>
 
                 <!-- Navigation Links -->
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                <div class="hidden space-x-6 sm:-my-px sm:ms-10 sm:flex">
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
@@ -21,9 +24,8 @@
                     <x-nav-link :href="route('appointments.index')" :active="request()->routeIs('appointments.*')">
                         {{ __('Rendez-vous') }}
                     </x-nav-link>
-                    <x-nav-link :href="route('search')" :active="request()->routeIs('search')">
-                        Recherche
-                    </x-nav-link>
+                    <x-nav-link :href="route('search')" :active="request()->routeIs('search')">Recherche</x-nav-link>
+                    <x-nav-link :href="route('cabinet-expenses.index')" :active="request()->routeIs('cabinet-expenses.*')">Besoins cabinet</x-nav-link>
                     @if(Auth::user()->hasRole('super_admin') || Auth::user()->hasRole('doctor'))
                         <div class="hidden sm:flex sm:items-center">
                             <x-dropdown align="left" width="48">
@@ -42,25 +44,30 @@
                                 </x-dropdown>
                         </div>
                     @endif
+                    @if(!Auth::user()->hasRole('staff'))
                     <div class="hidden sm:flex sm:items-center">
                         <x-dropdown align="left" width="48">
                             <x-slot name="trigger">
                                 <button class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium leading-5 transition
-                                    {{ request()->routeIs(['invoices.*', 'quotes.*']) ? 'border-indigo-400 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
+                                    {{ request()->routeIs(['invoices.*', 'quotes.*', 'billing.*']) ? 'border-indigo-400 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
                                     Facturation
                                     <svg class="ms-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
                                 </button>
                             </x-slot>
                             <x-slot name="content">
+                                <x-dropdown-link :href="route('billing.dashboard')">Dashboard facturation</x-dropdown-link>
                                 <x-dropdown-link :href="route('invoices.index')">Factures</x-dropdown-link>
-                                @if(!Auth::user()->hasRole('staff'))
-                                    <x-dropdown-link :href="route('quotes.index')">Devis</x-dropdown-link>
-                                @endif
+                                <x-dropdown-link :href="route('quotes.index')">Devis</x-dropdown-link>
                             </x-slot>
                         </x-dropdown>
                     </div>
+                    @else
+                    <x-nav-link :href="route('billing.dashboard')" :active="request()->routeIs('billing.dashboard')">Facturation</x-nav-link>
+                    @endif
                     @if(can_access_dossier())
-                        <x-nav-link :href="route('reports.by-room-prestation')" :active="request()->routeIs('reports.by-room-prestation')">Rapports salles</x-nav-link>
+                        <x-nav-link :href="route('reports.stats')" :active="request()->routeIs('reports.stats')">Répartition (mois / année)</x-nav-link>
+                        <x-nav-link :href="route('reports.by-room-prestation')" :active="request()->routeIs('reports.by-room-prestation')">Rapport par prestation</x-nav-link>
+                        <x-nav-link :href="route('ai-assistant.logs')" :active="request()->routeIs('ai-assistant.logs')">Logs Assistant IA</x-nav-link>
                     @endif
                     @if(Auth::user()->hasRole('super_admin'))
                         <x-nav-link :href="route('availability-slots.index')" :active="request()->routeIs('availability-slots.*')">
@@ -100,6 +107,9 @@
                     <x-slot name="content">
                         <x-dropdown-link :href="route('profile.edit')">
                             {{ __('Profile') }}
+                        </x-dropdown-link>
+                        <x-dropdown-link :href="route('about')">
+                            À propos
                         </x-dropdown-link>
 
                         <!-- Authentication -->
@@ -141,6 +151,7 @@
                 {{ __('Rendez-vous') }}
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('search')" :active="request()->routeIs('search')">Recherche</x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('cabinet-expenses.index')" :active="request()->routeIs('cabinet-expenses.*')">Besoins cabinet</x-responsive-nav-link>
             @if(Auth::user()->hasRole('super_admin') || Auth::user()->hasRole('doctor'))
                 <div class="border-t border-gray-100 pt-2 mt-2">
                     <button @click="cabinetOpen = !cabinetOpen" class="w-full flex items-center justify-between px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-md">
@@ -154,18 +165,24 @@
                     </div>
                 </div>
             @endif
+            @if(Auth::user()->hasRole('staff'))
+            <x-responsive-nav-link :href="route('billing.dashboard')" :active="request()->routeIs('billing.dashboard')">Facturation</x-responsive-nav-link>
+            @else
             <div class="border-t border-gray-100 pt-2 mt-2">
                 <button @click="facturationOpen = !facturationOpen" class="w-full flex items-center justify-between px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-md">
                     Facturation
                     <svg class="h-4 w-4 transition" :class="facturationOpen ? 'rotate-180' : ''" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
                 </button>
                 <div x-show="facturationOpen" x-cloak class="pl-4 space-y-0.5 mt-1">
+                    <a href="{{ route('billing.dashboard') }}" class="block px-4 py-2 text-sm {{ request()->routeIs('billing.dashboard') ? 'text-indigo-700 font-medium' : 'text-gray-600' }}">Dashboard facturation</a>
                     <a href="{{ route('invoices.index') }}" class="block px-4 py-2 text-sm {{ request()->routeIs('invoices.*') ? 'text-indigo-700 font-medium' : 'text-gray-600' }}">Factures</a>
-                    @if(!Auth::user()->hasRole('staff'))
-                        <a href="{{ route('quotes.index') }}" class="block px-4 py-2 text-sm {{ request()->routeIs('quotes.*') ? 'text-indigo-700 font-medium' : 'text-gray-600' }}">Devis</a>
-                    @endif
+                    <a href="{{ route('quotes.index') }}" class="block px-4 py-2 text-sm {{ request()->routeIs('quotes.*') ? 'text-indigo-700 font-medium' : 'text-gray-600' }}">Devis</a>
                 </div>
             </div>
+            @endif
+            @if(can_access_dossier())
+                <x-responsive-nav-link :href="route('ai-assistant.logs')" :active="request()->routeIs('ai-assistant.logs')">Logs Assistant IA</x-responsive-nav-link>
+            @endif
             @if(Auth::user()->hasRole('super_admin'))
                 <x-responsive-nav-link :href="route('availability-slots.index')" :active="request()->routeIs('availability-slots.*')">Créneaux</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('poles.index')" :active="request()->routeIs('poles.*')">Pôles</x-responsive-nav-link>

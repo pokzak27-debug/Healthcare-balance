@@ -9,7 +9,7 @@ class Quote extends Model
 {
     protected $fillable = [
         'number', 'patient_id', 'appointment_id', 'amount', 'status',
-        'quote_date', 'valid_until', 'description', 'notes', 'invoice_id',
+        'quote_date', 'valid_until', 'description', 'notes', 'invoice_id', 'custom_data',
     ];
 
     public const STATUSES = [
@@ -25,6 +25,7 @@ class Quote extends Model
             'amount' => 'decimal:2',
             'quote_date' => 'date',
             'valid_until' => 'date',
+            'custom_data' => 'array',
         ];
     }
 
